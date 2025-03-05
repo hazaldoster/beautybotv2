@@ -1,46 +1,82 @@
-# Getting Started with Create React App
+# Agesa Chatbot
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A simple React-based chatbot UI that connects to OpenAI's Assistant API.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- Clean, modern UI with message bubbles
+- Real-time conversation with OpenAI's Assistant
+- Direct integration with OpenAI's Assistant API
+- Loading indicators for better UX
 
-### `npm start`
+## Prerequisites
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+To use this chatbot, you'll need:
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+1. An OpenAI API key (get one at https://platform.openai.com/api-keys)
+2. An Assistant ID (create one at https://platform.openai.com/assistants)
 
-### `npm test`
+## Installation
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. Clone this repository:
+   ```
+   git clone https://github.com/yourusername/agesa-chatbot.git
+   cd agesa-chatbot
+   ```
 
-### `npm run build`
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. Configure your environment variables:
+   - Copy `.env.example` to `.env`
+   - Add your OpenAI API key and Assistant ID to the `.env` file:
+     ```
+     REACT_APP_OPENAI_API_KEY=your_openai_api_key_here
+     REACT_APP_ASSISTANT_ID=your_assistant_id_here
+     ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+4. Start the development server:
+   ```
+   npm start
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+5. Open your browser and navigate to `http://localhost:3000`
 
-### `npm run eject`
+## Usage
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+1. Ensure your OpenAI API key and Assistant ID are correctly set in the `.env` file
+2. Start the application and wait for it to connect to your OpenAI Assistant
+3. Type your message in the input field at the bottom and press Enter or click the Send button
+4. Enjoy your conversation with your OpenAI Assistant!
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## How It Works
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+The application creates a thread with OpenAI's Assistant API when it starts. When you send a message:
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+1. Your message is added to the thread
+2. The Assistant processes your message
+3. The response is retrieved and displayed in the chat interface
 
-## Learn More
+All communication happens directly with OpenAI's API, ensuring you get the full capabilities of your configured Assistant.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+## Security Note
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+This application stores your API key and Assistant ID as environment variables. For production use, you should implement a backend service to handle API calls and not expose your API key in the frontend.
+
+## Technologies Used
+
+- React
+- TypeScript
+- styled-components
+- OpenAI API
+
+## License
+
+MIT
+
+## Acknowledgments
+
+- OpenAI for providing the Assistant API
+- The React community for the excellent tools and libraries
