@@ -24,12 +24,26 @@ console.log('Environment:', {
   PROXY_URL: process.env.REACT_APP_PROXY_URL,
   QDRANT_URL: process.env.REACT_APP_QDRANT_URL ? 'Set' : 'Not set',
   SUPABASE_URL: process.env.REACT_APP_SUPABASE_URL ? 'Set' : 'Not set',
-  OPENAI_API_KEY: process.env.OPENAI_API_KEY ? 'Set' : 'Not set'
+  OPENAI_API_KEY: process.env.OPENAI_API_KEY ? 'Set' : 'Not set',
+  ASSISTANT_ID: process.env.ASSISTANT_ID ? 'Set' : 'Not set',
+  REACT_APP_ASSISTANT_ID: process.env.REACT_APP_ASSISTANT_ID ? 'Set' : 'Not set'
 });
 
 // Create OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || process.env.REACT_APP_OPENAI_API_KEY
+});
+
+// Add an endpoint to provide configuration to the frontend
+app.get('/api/config', (req, res) => {
+  // Only provide non-sensitive configuration
+  const config = {
+    assistantId: process.env.ASSISTANT_ID || process.env.REACT_APP_ASSISTANT_ID,
+    qdrantCollection: process.env.REACT_APP_QDRANT_COLLECTION || 'product_inventory',
+    // Add any other non-sensitive configuration here
+  };
+  
+  res.json(config);
 });
 
 // API endpoint to proxy OpenAI requests
@@ -41,11 +55,15 @@ app.post('/api/chat', async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
     
-    if (!assistantId) {
+    // Use the assistantId from the request or fall back to the environment variables
+    const effectiveAssistantId = assistantId || process.env.ASSISTANT_ID || process.env.REACT_APP_ASSISTANT_ID;
+    
+    if (!effectiveAssistantId) {
       return res.status(400).json({ error: 'Assistant ID is required' });
     }
     
     console.log(`Processing message: "${message.substring(0, 50)}${message.length > 50 ? '...' : ''}"`);
+    console.log(`Using Assistant ID: ${effectiveAssistantId}`);
     
     // Create a thread if one doesn't exist
     let currentThreadId = threadId;
@@ -63,7 +81,7 @@ app.post('/api/chat', async (req, res) => {
     
     // Run the assistant on the thread
     const run = await openai.beta.threads.runs.create(currentThreadId, {
-      assistant_id: assistantId
+      assistant_id: effectiveAssistantId
     });
     
     // Poll for the run to complete

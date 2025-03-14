@@ -7,7 +7,7 @@
 
 interface ChatRequest {
   message: string;
-  assistantId: string;
+  assistantId?: string;
   threadId?: string;
 }
 
@@ -33,6 +33,10 @@ export class BackendService {
    */
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
     try {
+      if (!request.assistantId) {
+        console.warn('No assistantId provided to backendService.sendMessage. The backend will use the server-side Assistant ID.');
+      }
+      
       const response = await fetch(`${this.baseUrl}/api/chat`, {
         method: 'POST',
         headers: {

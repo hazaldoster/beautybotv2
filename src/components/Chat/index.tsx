@@ -11,10 +11,6 @@ const ChatContainer = styled.div`
   width: 100%;
   margin: 0;
   background-color: #fff;
-  background-image: url('/unnamed-2.png');
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
   border-radius: 0;
   box-shadow: none;
   overflow: hidden;
@@ -334,10 +330,15 @@ const Chat: React.FC<ChatProps> = ({
     setIsLoading(true);
     
     try {
+      // Check if assistantId is empty
+      if (!assistantId) {
+        console.warn('No Assistant ID provided in props. The backend will use the server-side Assistant ID.');
+      }
+      
       // Send message to backend service
       const response = await backendService.sendMessage({
         message: input,
-        assistantId,
+        assistantId, // This might be empty, but our backend will handle it
         threadId
       });
       
