@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { v4 as uuidv4 } from 'uuid';
 import { Message } from '../../types';
-import OpenAIService from '../../services/openai';
+import { BackendService } from '../../services/backendService';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -272,7 +272,6 @@ const BackButton = styled.button`
 `;
 
 interface ChatProps {
-  apiKey: string;
   assistantId: string;
   qdrantUrl?: string;
   qdrantApiKey?: string;
@@ -282,7 +281,6 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ 
-  apiKey, 
   assistantId, 
   qdrantUrl, 
   qdrantApiKey, 
@@ -293,46 +291,26 @@ const Chat: React.FC<ChatProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [openAIService, setOpenAIService] = useState<OpenAIService | null>(null);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
+  const [threadId, setThreadId] = useState<string | undefined>(undefined);
+  
+  // Initialize backend service
+  const backendService = new BackendService();
+  
+  // Add welcome message
   useEffect(() => {
-    // Check if API credentials are provided
-    if (!apiKey) {
-      setConnectionError('Missing API credentials. Please check your .env file.');
-      return;
-    }
+    setMessages([
+      {
+        id: uuidv4(),
+        role: 'assistant',
+        content: 'Hello! I\'m your beauty assistant. How can I help you today?',
+        timestamp: new Date(),
+      },
+    ]);
+  }, []);
 
-    try {
-      // Initialize OpenAI service
-      const service = new OpenAIService({ 
-        apiKey, 
-        assistantId,
-        qdrantUrl,
-        qdrantApiKey,
-        qdrantCollection,
-        enableQdrant
-      });
-      setOpenAIService(service);
-      
-      // Add welcome message
-      setMessages([
-        {
-          id: uuidv4(),
-          role: 'assistant',
-          content: 'Hello! How can I help you with beauty advice today?',
-          timestamp: new Date(),
-        },
-      ]);
-    } catch (error) {
-      console.error('Error initializing OpenAI service:', error);
-      setConnectionError('Error initializing OpenAI service. Please check your credentials.');
-    }
-  }, [apiKey, assistantId, qdrantUrl, qdrantApiKey, qdrantCollection, enableQdrant]);
-
+  // Scroll to bottom when messages change
   useEffect(() => {
-    // Scroll to bottom when messages change
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -341,7 +319,7 @@ const Chat: React.FC<ChatProps> = ({
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || !openAIService) return;
+    if (!input.trim()) return;
     
     // Add user message
     const userMessage: Message = {
@@ -356,15 +334,26 @@ const Chat: React.FC<ChatProps> = ({
     setIsLoading(true);
     
     try {
-      // Send message to OpenAI
-      const response = await openAIService.sendMessage(input);
+      // Send message to backend service
+      const response = await backendService.sendMessage({
+        message: input,
+        assistantId,
+        threadId
+      });
       
-      if (response) {
-        // Add assistant response
-        setMessages((prev: Message[]) => [...prev, response as Message]);
-      } else {
-        throw new Error('No response received from assistant');
-      }
+      // Save the thread ID for future messages
+      setThreadId(response.threadId);
+      
+      // Add assistant response
+      setMessages((prev: Message[]) => [
+        ...prev, 
+        {
+          id: response.message.id,
+          role: response.message.role,
+          content: response.message.content,
+          timestamp: new Date(),
+        } as Message
+      ]);
     } catch (error) {
       console.error('Error sending message:', error);
       // Add error message
@@ -419,12 +408,6 @@ const Chat: React.FC<ChatProps> = ({
       </ChatHeader>
       
       <MessagesContainer>
-        {connectionError && (
-          <ErrorBanner>
-            <strong>Error:</strong> {connectionError}
-          </ErrorBanner>
-        )}
-        
         {Object.entries(groupedMessages).map(([groupId, groupMessages]) => (
           <MessageGroup 
             key={groupId} 
@@ -463,12 +446,12 @@ const Chat: React.FC<ChatProps> = ({
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask any question about beauty advice"
-            disabled={isLoading || !!connectionError}
+            disabled={isLoading}
           />
         </InputWrapper>
         <SendButton 
           onClick={handleSendMessage} 
-          disabled={isLoading || !input.trim() || !!connectionError}
+          disabled={isLoading || !input.trim()}
           aria-label="Send message"
         >
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">

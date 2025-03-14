@@ -99,32 +99,22 @@ const StartButton = styled.button`
 function App() {
   const [showChat, setShowChat] = useState(false);
   
-  // Get API credentials from environment variables
-  const apiKey = process.env.REACT_APP_OPENAI_API_KEY || '';
+  // Get assistant ID from environment variables
+  // This will be passed to the backend, which will use its own API key
   const assistantId = process.env.REACT_APP_ASSISTANT_ID || '';
   
   // Get Qdrant credentials from environment variables
-  // Use the CORS proxy URL if available
-  const proxyUrl = process.env.REACT_APP_PROXY_URL || '';
-  const qdrantUrl = proxyUrl || process.env.REACT_APP_QDRANT_URL || '';
+  const qdrantUrl = process.env.REACT_APP_QDRANT_URL || '';
   const qdrantApiKey = process.env.REACT_APP_QDRANT_API_KEY || '';
   const qdrantCollection = process.env.REACT_APP_QDRANT_COLLECTION || 'product_inventory';
   
-  // Enable Qdrant if we have a proxy URL or direct URL
+  // Enable Qdrant if we have a URL
   const enableQdrant = !!qdrantUrl;
 
-  // Ensure we have the required credentials
-  if (!apiKey) {
-    console.error('Missing OpenAI API key. Please check your .env file.');
-  }
-  
-  // Log configuration
+  // Log configuration (excluding API keys)
   console.log('Configuration:');
-  console.log(`- OpenAI API Key: ${apiKey ? 'Set' : 'Not set'}`);
   console.log(`- Assistant ID: ${assistantId ? 'Set' : 'Not set'}`);
-  console.log(`- Proxy URL: ${proxyUrl ? 'Set' : 'Not set'}`);
   console.log(`- Qdrant URL: ${qdrantUrl ? 'Set' : 'Not set'}`);
-  console.log(`- Qdrant API Key: ${qdrantApiKey ? 'Set' : 'Not set'}`);
   console.log(`- Qdrant Collection: ${qdrantCollection}`);
   console.log(`- Qdrant Enabled: ${enableQdrant ? 'Yes' : 'No'}`);
 
@@ -140,7 +130,6 @@ function App() {
     return (
       <AppContainer>
         <Chat 
-          apiKey={apiKey} 
           assistantId={assistantId}
           qdrantUrl={qdrantUrl}
           qdrantApiKey={qdrantApiKey}
