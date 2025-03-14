@@ -1,10 +1,14 @@
 import OpenAI from 'openai';
 import { Message, OpenAIConfig } from '../types';
+import ProductQueryService from './ProductQueryService';
+import { v4 as uuidv4 } from 'uuid';
 
 class OpenAIService {
   private openai: OpenAI;
   private assistantId: string;
   private threadId: string | null = null;
+  private productQueryService: ProductQueryService | null = null;
+  private useProductQueryProcessor: boolean = false;
 
   constructor(config: OpenAIConfig) {
     this.openai = new OpenAI({
@@ -12,6 +16,62 @@ class OpenAIService {
       dangerouslyAllowBrowser: true,
     });
     this.assistantId = config.assistantId;
+    
+    // Initialize ProductQueryService if Qdrant credentials are provided and explicitly enabled
+    if (config.enableQdrant && config.qdrantUrl && config.qdrantApiKey && config.qdrantCollection) {
+      try {
+        console.log(`OpenAIService: Initializing ProductQueryService with Qdrant URL: ${config.qdrantUrl}`);
+        
+        this.productQueryService = new ProductQueryService({
+          qdrantUrl: config.qdrantUrl,
+          qdrantApiKey: config.qdrantApiKey,
+          openaiApiKey: config.apiKey,
+          collectionName: config.qdrantCollection
+        });
+        
+        // Test connection to Qdrant
+        this.testQdrantConnection();
+        
+        // Enable product query processor
+        this.useProductQueryProcessor = true;
+        console.log('Product query processor enabled');
+      } catch (error) {
+        console.error('Error initializing ProductQueryService:', error);
+      }
+    } else {
+      console.log('Product query processor disabled: Missing Qdrant credentials or explicitly disabled');
+      if (!config.enableQdrant) console.log('Reason: enableQdrant is false');
+      if (!config.qdrantUrl) console.log('Reason: qdrantUrl is missing');
+      if (!config.qdrantApiKey) console.log('Reason: qdrantApiKey is missing');
+      if (!config.qdrantCollection) console.log('Reason: qdrantCollection is missing');
+    }
+  }
+  
+  private async testQdrantConnection() {
+    if (!this.productQueryService) return;
+    
+    try {
+      const connectionOk = await this.productQueryService.testConnection();
+      if (connectionOk) {
+        console.log("Successfully connected to Qdrant");
+        this.useProductQueryProcessor = true;
+      } else {
+        console.warn("Could not connect to Qdrant or collection is not properly set up");
+        this.useProductQueryProcessor = false;
+      }
+    } catch (error) {
+      console.error("Error connecting to Qdrant:", {
+        description: error instanceof Error ? error.message : String(error)
+      });
+      
+      // Disable product query processor on connection error
+      this.useProductQueryProcessor = false;
+      
+      // Log additional information for debugging
+      if (error instanceof Error && error.stack) {
+        console.debug("Error stack:", error.stack);
+      }
+    }
   }
 
   async createThread() {
@@ -27,6 +87,23 @@ class OpenAIService {
 
   async sendMessage(content: string) {
     try {
+      // If ProductQueryService is available and connected, use it
+      if (this.useProductQueryProcessor && this.productQueryService) {
+        console.log("Using ProductQueryService to process query");
+        
+        const result = await this.productQueryService.processQuery(content);
+        
+        return {
+          id: uuidv4(),
+          role: 'assistant' as const,
+          content: result.answer,
+          timestamp: new Date(),
+        };
+      }
+      
+      // Otherwise, fall back to OpenAI Assistant API
+      console.log("Using OpenAI Assistant API to process query");
+      
       if (!this.threadId) {
         await this.createThread();
       }

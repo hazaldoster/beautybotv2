@@ -1,0 +1,87 @@
+version: '3.7'
+
+services:
+  # Main application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: beautybot-app
+    ports:
+      - "3002:3000"
+    environment:
+      - NODE_ENV=production
+      - REACT_APP_PROXY_URL=http://cors-proxy:3001
+    depends_on:
+      - cors-proxy
+      - qdrant
+    restart: always
+
+  # CORS Proxy service
+  cors-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.proxy
+    container_name: beautybot-cors-proxy
+    ports:
+      - "3001:3001"
+    environment:
+      - PROXY_PORT=3001
+      - REACT_APP_QDRANT_URL=http://qdrant:6333
+      - REACT_APP_QDRANT_API_KEY=local_api_key
+    depends_on:
+      - qdrant
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Qdrant vector database
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: beautybot-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - ./qdrant_storage:/qdrant/storage
+      - ./qdrant_snapshots:/qdrant/snapshots
+      - ./qdrant.yaml:/qdrant/config/production.yaml
+    environment:
+      # Service configuration
+      - QDRANT__SERVICE__API_KEY=local_api_key
+      - QDRANT__SERVICE__MAX_REQUEST_SIZE_MB=64
+      - QDRANT__SERVICE__HOST=0.0.0.0
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      
+      # CORS configuration
+      - QDRANT__SERVICE__ENABLE_CORS=true
+      - QDRANT__SERVICE__CORS__ENABLED=true
+      - QDRANT__SERVICE__CORS__ALLOWED_ORIGINS=*
+      - QDRANT__SERVICE__CORS__ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+      - QDRANT__SERVICE__CORS__ALLOWED_HEADERS=Content-Type,api-key,Authorization
+      - QDRANT__SERVICE__CORS__ALLOW_CREDENTIALS=true
+      - QDRANT__SERVICE__CORS__MAX_AGE_SECS=86400
+      
+      # Storage configuration
+      - QDRANT__STORAGE__STORAGE_PATH=/qdrant/storage
+      - QDRANT__STORAGE__SNAPSHOTS_PATH=/qdrant/snapshots
+      - QDRANT__STORAGE__HNSW_INDEX__M=16
+      - QDRANT__STORAGE__HNSW_INDEX__EF_CONSTRUCT=100
+      - QDRANT__STORAGE__HNSW_INDEX__FULL_SCAN_THRESHOLD_KB=10000
+      - QDRANT__STORAGE__HNSW_INDEX__MAX_INDEXING_THREADS=0
+      - QDRANT__STORAGE__HNSW_INDEX__ON_DISK=false
+      
+      # Telemetry
+      - QDRANT__TELEMETRY_DISABLED=true
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s 

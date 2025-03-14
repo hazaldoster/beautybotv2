@@ -82,7 +82,7 @@ const MessagesContainer = styled.div`
 `;
 
 interface MessageGroupProps {
-  isUser: boolean;
+  $isUser: boolean;
 }
 
 const MessageGroup = styled.div<MessageGroupProps>`
@@ -90,18 +90,18 @@ const MessageGroup = styled.div<MessageGroupProps>`
   flex-direction: column;
   margin-bottom: 15px;
   max-width: 80%;
-  align-self: ${props => (props.isUser ? 'flex-end' : 'flex-start')};
+  align-self: ${(props: MessageGroupProps) => (props.$isUser ? 'flex-end' : 'flex-start')};
 `;
 
 interface MessageBubbleProps {
-  isUser: boolean;
+  $isUser: boolean;
 }
 
 const MessageBubble = styled.div<MessageBubbleProps>`
   padding: 12px 16px;
   border-radius: 18px;
-  background-color: ${props => (props.isUser ? '#0084ff' : 'rgba(255, 255, 255, 0.9)')};
-  color: ${props => (props.isUser ? 'white' : '#333')};
+  background-color: ${(props: MessageBubbleProps) => (props.$isUser ? '#0084ff' : 'rgba(255, 255, 255, 0.9)')};
+  color: ${(props: MessageBubbleProps) => (props.$isUser ? 'white' : '#333')};
   margin-bottom: 2px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   word-wrap: break-word;
@@ -109,25 +109,25 @@ const MessageBubble = styled.div<MessageBubbleProps>`
   line-height: 1.5;
   
   &:first-child {
-    border-top-left-radius: ${props => (props.isUser ? '18px' : '4px')};
-    border-top-right-radius: ${props => (props.isUser ? '4px' : '18px')};
+    border-top-left-radius: ${(props: MessageBubbleProps) => (props.$isUser ? '18px' : '4px')};
+    border-top-right-radius: ${(props: MessageBubbleProps) => (props.$isUser ? '4px' : '18px')};
   }
   
   &:last-child {
-    border-bottom-left-radius: ${props => (props.isUser ? '18px' : '4px')};
-    border-bottom-right-radius: ${props => (props.isUser ? '4px' : '18px')};
+    border-bottom-left-radius: ${(props: MessageBubbleProps) => (props.$isUser ? '18px' : '4px')};
+    border-bottom-right-radius: ${(props: MessageBubbleProps) => (props.$isUser ? '4px' : '18px')};
   }
 `;
 
 interface MessageTimeProps {
-  isUser: boolean;
+  $isUser: boolean;
 }
 
 const MessageTime = styled.div<MessageTimeProps>`
   font-size: 0.8rem;
   color: #999;
   margin-top: 4px;
-  align-self: ${props => (props.isUser ? 'flex-end' : 'flex-start')};
+  align-self: ${(props: MessageTimeProps) => (props.$isUser ? 'flex-end' : 'flex-start')};
 `;
 
 const InputContainer = styled.div`
@@ -274,10 +274,22 @@ const BackButton = styled.button`
 interface ChatProps {
   apiKey: string;
   assistantId: string;
+  qdrantUrl?: string;
+  qdrantApiKey?: string;
+  qdrantCollection?: string;
+  enableQdrant?: boolean;
   onBack?: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ apiKey, assistantId, onBack }) => {
+const Chat: React.FC<ChatProps> = ({ 
+  apiKey, 
+  assistantId, 
+  qdrantUrl, 
+  qdrantApiKey, 
+  qdrantCollection, 
+  enableQdrant, 
+  onBack 
+}) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -287,14 +299,21 @@ const Chat: React.FC<ChatProps> = ({ apiKey, assistantId, onBack }) => {
 
   useEffect(() => {
     // Check if API credentials are provided
-    if (!apiKey || !assistantId) {
-      setConnectionError('API kimlik bilgileri eksik. Lütfen .env dosyanızı kontrol edin.');
+    if (!apiKey) {
+      setConnectionError('Missing API credentials. Please check your .env file.');
       return;
     }
 
     try {
       // Initialize OpenAI service
-      const service = new OpenAIService({ apiKey, assistantId });
+      const service = new OpenAIService({ 
+        apiKey, 
+        assistantId,
+        qdrantUrl,
+        qdrantApiKey,
+        qdrantCollection,
+        enableQdrant
+      });
       setOpenAIService(service);
       
       // Add welcome message
@@ -302,15 +321,15 @@ const Chat: React.FC<ChatProps> = ({ apiKey, assistantId, onBack }) => {
         {
           id: uuidv4(),
           role: 'assistant',
-          content: 'Merhaba! Size finansal konularda nasıl yardımcı olabilirim?',
+          content: 'Hello! How can I help you with beauty advice today?',
           timestamp: new Date(),
         },
       ]);
     } catch (error) {
       console.error('Error initializing OpenAI service:', error);
-      setConnectionError('OpenAI servisini başlatırken hata oluştu. Lütfen kimlik bilgilerinizi kontrol edin.');
+      setConnectionError('Error initializing OpenAI service. Please check your credentials.');
     }
-  }, [apiKey, assistantId]);
+  }, [apiKey, assistantId, qdrantUrl, qdrantApiKey, qdrantCollection, enableQdrant]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
@@ -332,7 +351,7 @@ const Chat: React.FC<ChatProps> = ({ apiKey, assistantId, onBack }) => {
       timestamp: new Date(),
     };
     
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev: Message[]) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
     
@@ -342,19 +361,19 @@ const Chat: React.FC<ChatProps> = ({ apiKey, assistantId, onBack }) => {
       
       if (response) {
         // Add assistant response
-        setMessages(prev => [...prev, response as Message]);
+        setMessages((prev: Message[]) => [...prev, response as Message]);
       } else {
         throw new Error('No response received from assistant');
       }
     } catch (error) {
       console.error('Error sending message:', error);
       // Add error message
-      setMessages(prev => [
+      setMessages((prev: Message[]) => [
         ...prev,
         {
           id: uuidv4(),
           role: 'assistant',
-          content: 'Üzgünüm, isteğinizi işlerken bir hata oluştu. Lütfen tekrar deneyin.',
+          content: 'Sorry, there was an error processing your request. Please try again.',
           timestamp: new Date(),
         } as Message,
       ]);
@@ -371,7 +390,7 @@ const Chat: React.FC<ChatProps> = ({ apiKey, assistantId, onBack }) => {
 
   // Group messages by sender
   const groupedMessages: { [key: string]: Message[] } = {};
-  messages.forEach((message) => {
+  messages.forEach((message: Message) => {
     const lastGroup = Object.keys(groupedMessages).pop();
     if (lastGroup && messages[parseInt(lastGroup)].role === message.role) {
       groupedMessages[lastGroup].push(message);
@@ -392,34 +411,34 @@ const Chat: React.FC<ChatProps> = ({ apiKey, assistantId, onBack }) => {
           </BackButton>
         )}
         <ChatHeaderAvatar>
-          <AvatarImage src="/AgeSA-Icon-192x192.png" alt="Agesa Logo" />
+          <AvatarImage src="/BeautyBot-Icon-192x192.png" alt="BeautyBot Logo" />
         </ChatHeaderAvatar>
-        <ChatHeaderTitle>Finansal Asistan</ChatHeaderTitle>
-        <BotName>Agesa Finansal Terapi</BotName>
-        <ChatHeaderStatus>Çevrimiçi</ChatHeaderStatus>
+        <ChatHeaderTitle>Beauty Assistant</ChatHeaderTitle>
+        <BotName>BeautyBot</BotName>
+        <ChatHeaderStatus>Online</ChatHeaderStatus>
       </ChatHeader>
       
       <MessagesContainer>
         {connectionError && (
           <ErrorBanner>
-            <strong>Hata:</strong> {connectionError}
+            <strong>Error:</strong> {connectionError}
           </ErrorBanner>
         )}
         
         {Object.entries(groupedMessages).map(([groupId, groupMessages]) => (
           <MessageGroup 
             key={groupId} 
-            isUser={groupMessages[0].role === 'user'}
+            $isUser={groupMessages[0].role === 'user'}
           >
             {groupMessages.map((message) => (
               <MessageBubble 
                 key={message.id} 
-                isUser={message.role === 'user'}
+                $isUser={message.role === 'user'}
               >
                 {message.content}
               </MessageBubble>
             ))}
-            <MessageTime isUser={groupMessages[0].role === 'user'}>
+            <MessageTime $isUser={groupMessages[0].role === 'user'}>
               {formatTime(groupMessages[groupMessages.length - 1].timestamp)}
             </MessageTime>
           </MessageGroup>
@@ -441,9 +460,9 @@ const Chat: React.FC<ChatProps> = ({ apiKey, assistantId, onBack }) => {
           <Input
             type="text"
             value={input}
-            onChange={e => setInput(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Finansal terapi hakkında herhangi bir soru sor"
+            placeholder="Ask any question about beauty advice"
             disabled={isLoading || !!connectionError}
           />
         </InputWrapper>

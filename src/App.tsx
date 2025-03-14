@@ -102,11 +102,31 @@ function App() {
   // Get API credentials from environment variables
   const apiKey = process.env.REACT_APP_OPENAI_API_KEY || '';
   const assistantId = process.env.REACT_APP_ASSISTANT_ID || '';
+  
+  // Get Qdrant credentials from environment variables
+  // Use the CORS proxy URL if available
+  const proxyUrl = process.env.REACT_APP_PROXY_URL || '';
+  const qdrantUrl = proxyUrl || process.env.REACT_APP_QDRANT_URL || '';
+  const qdrantApiKey = process.env.REACT_APP_QDRANT_API_KEY || '';
+  const qdrantCollection = process.env.REACT_APP_QDRANT_COLLECTION || 'product_inventory';
+  
+  // Enable Qdrant if we have a proxy URL or direct URL
+  const enableQdrant = !!qdrantUrl;
 
   // Ensure we have the required credentials
-  if (!apiKey || !assistantId) {
-    console.error('Missing OpenAI API credentials. Please check your .env file.');
+  if (!apiKey) {
+    console.error('Missing OpenAI API key. Please check your .env file.');
   }
+  
+  // Log configuration
+  console.log('Configuration:');
+  console.log(`- OpenAI API Key: ${apiKey ? 'Set' : 'Not set'}`);
+  console.log(`- Assistant ID: ${assistantId ? 'Set' : 'Not set'}`);
+  console.log(`- Proxy URL: ${proxyUrl ? 'Set' : 'Not set'}`);
+  console.log(`- Qdrant URL: ${qdrantUrl ? 'Set' : 'Not set'}`);
+  console.log(`- Qdrant API Key: ${qdrantApiKey ? 'Set' : 'Not set'}`);
+  console.log(`- Qdrant Collection: ${qdrantCollection}`);
+  console.log(`- Qdrant Enabled: ${enableQdrant ? 'Yes' : 'No'}`);
 
   const handleStartChat = () => {
     setShowChat(true);
@@ -121,7 +141,11 @@ function App() {
       <AppContainer>
         <Chat 
           apiKey={apiKey} 
-          assistantId={assistantId} 
+          assistantId={assistantId}
+          qdrantUrl={qdrantUrl}
+          qdrantApiKey={qdrantApiKey}
+          qdrantCollection={qdrantCollection}
+          enableQdrant={enableQdrant}
           onBack={handleBackToWelcome}
         />
       </AppContainer>
@@ -132,15 +156,15 @@ function App() {
     <WelcomeContainer>
       <WelcomeCard>
         <WelcomeLogo>
-          <LogoImage src="/AgeSA-Icon-192x192.png" alt="Agesa Logo" />
+          <LogoImage src="/BeautyBot-Icon-192x192.png" alt="BeautyBot Logo" />
         </WelcomeLogo>
-        <WelcomeTitle>Agesa Finansal Terapi</WelcomeTitle>
+        <WelcomeTitle>BeautyBot</WelcomeTitle>
         <WelcomeSubtitle>
-          Finansal hedeflerinize ulaşmanıza yardımcı olacak yapay zeka destekli asistanımızla tanışın.
-          Size özel finansal tavsiyeler ve çözümler sunuyoruz.
+          Meet our AI-powered assistant that will help you achieve your beauty goals.
+          We offer personalized beauty advice and product recommendations just for you.
         </WelcomeSubtitle>
         <StartButton onClick={handleStartChat}>
-          Finansal Terapi Asistanıyla Konuşmaya Başla
+          Start Chatting with Beauty Assistant
         </StartButton>
       </WelcomeCard>
     </WelcomeContainer>

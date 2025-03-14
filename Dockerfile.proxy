@@ -1,0 +1,21 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy proxy-specific package.json
+COPY proxy-package.json ./package.json
+
+# Install dependencies
+RUN npm install
+
+# Copy the CORS proxy script
+COPY cors-proxy.js .
+
+# Use Docker-specific environment variables
+COPY .env.docker .env
+
+# Expose the port the proxy runs on
+EXPOSE 3001
+
+# Start the proxy
+CMD ["node", "cors-proxy.js"] 

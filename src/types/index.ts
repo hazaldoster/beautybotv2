@@ -14,4 +14,8 @@ export interface ChatState {
 export interface OpenAIConfig {
   apiKey: string;
   assistantId: string;
+  qdrantUrl?: string;
+  qdrantApiKey?: string;
+  qdrantCollection?: string;
+  enableQdrant?: boolean;
 }

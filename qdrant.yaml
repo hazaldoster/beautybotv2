@@ -1,0 +1,79 @@
+# Qdrant configuration file
+# Based on https://qdrant.tech/documentation/guides/configuration/
+
+log_level: INFO
+
+storage:
+  # Storage persistence path
+  storage_path: /qdrant/storage
+
+  # Path to store snapshots
+  snapshots_path: /qdrant/snapshots
+
+  # If true - point's payload will not be stored in memory.
+  # It will be read from the disk every time it is requested.
+  on_disk_payload: true
+
+  # Default parameters of HNSW Index
+  hnsw_index:
+    # Number of edges per node in the index graph
+    m: 16
+    # Number of neighbours to consider during the index building
+    ef_construct: 100
+    # Minimal size of vectors for additional payload-based indexing
+    full_scan_threshold_kb: 10000
+    # Number of parallel threads used for background index building
+    max_indexing_threads: 0
+    # Store HNSW index on disk
+    on_disk: false
+
+  # Default parameters for optimizers
+  optimizers:
+    # Default number of segments to optimize
+    default_segment_number: 2
+    # Minimal size of segment in KB
+    memmap_threshold_kb: 20000
+    # Minimal size of segment in KB for indexing
+    indexing_threshold_kb: 10000
+    # Interval between forced flushes
+    flush_interval_sec: 30
+    # Max threads for optimization
+    max_optimization_threads: 1
+
+service:
+  # Host to bind the service on
+  host: 0.0.0.0
+  # HTTP port to bind the service on
+  http_port: 6333
+  # gRPC port to bind the service on
+  grpc_port: 6334
+  # API key for authentication
+  api_key: local_api_key
+  # Maximum size of a single request in megabytes
+  max_request_size_mb: 64
+
+  # CORS configuration
+  cors:
+    # Enable CORS
+    enabled: true
+    # Allow requests from any origin
+    allowed_origins: ["*"]
+    # Allow these HTTP methods
+    allowed_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    # Allow these HTTP headers
+    allowed_headers: ["Content-Type", "api-key", "Authorization"]
+    # Allow credentials
+    allow_credentials: true
+    # Cache preflight requests for 24 hours
+    max_age_secs: 86400
+
+  # Enable web UI
+  enable_web_ui: true
+
+# Disable telemetry
+telemetry_disabled: true
+
+# Cluster configuration (disabled)
+cluster:
+  # Use `enabled: true` to run Qdrant in distributed mode
+  enabled: false 
